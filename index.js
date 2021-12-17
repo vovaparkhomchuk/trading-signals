@@ -6,12 +6,10 @@ const PositionTracker = require("./src/PositionTracker");
 
 // const filePath = "C:\\Users\\simp\\AppData\\Roaming\\VolFix.NET\\order_log.txt";
 const filePath = "./order_log copy.txt";
-const priceFile = "C:\\Users\\Goodrobot\\Documents\\";
+// const priceFile = "C:\\Users\\Goodrobot\\Documents\\";
+const priceFile = "./";
 
-const INSTRUMENTS = [
-  // { ticker: "NQ", ticksInPoint: 4, price: 0 },
-  // { ticker: "ES", ticksInPoint: 4, price: 0 },
-];
+const INSTRUMENTS = ["NQ", "ES"];
 
 const parser = new Parser();
 const positionTracker = new PositionTracker();
@@ -28,16 +26,15 @@ const main = async () => {
       const fileAsString = await asyncReadFile(filePath, "utf8");
       const file = fileAsString.split(/\r?\n/);
       const actions = parser.saveNewData(file).getActions();
-      console.log({ actions });
-      const positions = positionTracker.check(actions).getPositions();
+      const positions = positionTracker.checkActions(actions).getPositions();
       console.log({ positions });
     } else {
       console.log("filename not provided or check file access permissions");
     }
   });
 
-  INSTRUMENTS.map((x) => {
-    const path = priceFile + x.ticker + ".txt";
+  INSTRUMENTS.map((ticker) => {
+    const path = priceFile + ticker + ".txt";
     fs.watch(path, async (eventName, filename) => {
       const seconds = getChangeSeconds(path);
       if (actionDone[filename] == seconds) return;
@@ -47,8 +44,10 @@ const main = async () => {
         const fileAsString = await asyncReadFile(path, "utf8");
         const price = parseFloat(fileAsString.split(/\r?\n/)[0]);
         if (!isNaN(price)) {
-          x.price = price;
-          console.log({ [x.ticker]: price, INSTRUMENTS });
+          positionTracker.setPrices(ticker, price);
+          positionTracker.checkStopAndTake(ticker);
+          const positions = positionTracker.getPositions();
+          console.log({ positions });
         }
       } else {
         console.log("filename not provided or check file access permissions");
