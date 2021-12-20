@@ -39,7 +39,12 @@ const main = async () => {
       try {
         const fileAsString = await asyncReadFile(filePath, "utf8");
         const file = fileAsString.split(/\r?\n/);
-        const actions = parser.saveNewData(file).getActions();
+        const currentPositions = positionTracker.getPositions();
+        const lastPrices = positionTracker.getPrices();
+        parser.currentPositions = currentPositions;
+        parser.lastPrices = lastPrices;
+        const actions = parser.saveNewData(file, positionTracker).getActions();
+        console.log({ actions });
         const positions = positionTracker.checkActions(actions).getPositions();
         console.log({ positions });
       } catch (e) {

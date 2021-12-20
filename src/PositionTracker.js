@@ -13,8 +13,16 @@ class PositionTracker {
         switch (type) {
           case "TRADE OUT":
             this.#tradeOut(action);
+            return this;
           case "MARKET":
             this.#saveNewPosition(action, false);
+            return this;
+          case "MOVE TAKE":
+            this.#positions[ticker].takeProfit = takeProfit;
+            return this;
+          case "MOVE STOP":
+            this.#positions[ticker].stopLoss = stopLoss;
+            return this;
         }
       } else {
         switch (type) {
@@ -52,6 +60,10 @@ class PositionTracker {
   setPrices(ticker, price) {
     this.#prices[ticker] = price;
     return this;
+  }
+
+  getPrices() {
+    return this.#prices;
   }
 
   #saveNewPosition(action, isNew = true) {

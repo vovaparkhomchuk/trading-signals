@@ -1,9 +1,13 @@
+const instrumentInfo = require("./instrumentInfo");
+
 class Parser {
   #lastData = [];
   #newChanges = [];
   #marketPosition = 0;
   actions = [];
   #historyLoaded = false;
+  currentPositions = null;
+  lastPrices = {};
 
   constructor() {}
 
@@ -89,8 +93,40 @@ class Parser {
         }
         // move order
         else if (cells === 5 && splitedRow[2].includes("MOVE ORDER ID")) {
-          parsed.price = splitedRow[3].split("=")[1];
+          const price = Number(splitedRow[3].split("=")[1]);
           parsed.type = "MOVE";
+
+          const position =
+            this.currentPositions[parsed.ticker] &&
+            this.currentPositions[parsed.ticker].size !== 0
+              ? this.currentPositions[parsed.ticker].size
+              : 0;
+
+          if (position === 0) {
+          }
+          // changing OCO
+          else {
+            // long
+            if (position > 0) {
+              if (price > this.lastPrices[parsed.ticker]) {
+                parsed.takeProfit = price;
+                parsed.type += " TAKE";
+              } else if (price < this.lastPrices[parsed.ticker]) {
+                parsed.stopLoss = price;
+                parsed.type += " STOP";
+              }
+            }
+            // short
+            else if (position < 0) {
+              if (price < this.lastPrices[parsed.ticker]) {
+                parsed.takeProfit = price;
+                parsed.type += " TAKE";
+              } else if (price > this.lastPrices[parsed.ticker]) {
+                parsed.stopLoss = price;
+                parsed.type += " STOP";
+              }
+            }
+          }
         }
 
         actions.push(parsed);
@@ -103,6 +139,14 @@ class Parser {
       }
     }
     return this;
+  }
+
+  set currentPositions(currentPositions) {
+    this.currentPositions = currentPositions;
+  }
+
+  set lastPrices(lastPrices) {
+    this.lastPrices = lastPrices;
   }
 
   getActions() {
