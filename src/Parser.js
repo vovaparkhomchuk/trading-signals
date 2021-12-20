@@ -3,6 +3,7 @@ class Parser {
   #newChanges = [];
   #marketPosition = 0;
   actions = [];
+  #historyLoaded = false;
 
   constructor() {}
 
@@ -18,6 +19,7 @@ class Parser {
 
   #parseNewData() {
     if (this.#newChanges) {
+      const actions = [];
       for (let row of this.#newChanges) {
         if (row === "") continue;
         const splitedRow = row.split(";");
@@ -90,8 +92,14 @@ class Parser {
           parsed.price = splitedRow[3].split("=")[1];
           parsed.type = "MOVE";
         }
-        // console.log({ parsed });
-        this.actions.push(parsed);
+
+        actions.push(parsed);
+      }
+
+      if (this.#historyLoaded) this.actions = [...actions];
+      else {
+        this.actions = [...actions.slice(-1)];
+        this.#historyLoaded = true;
       }
     }
     return this;

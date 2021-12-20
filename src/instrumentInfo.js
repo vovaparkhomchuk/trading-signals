@@ -2,6 +2,9 @@ const instrumentInfo = {
   NQ: {
     ticksInPoint: 4,
   },
+  MNQ: {
+    ticksInPoint: 4,
+  },
   ES: {
     ticksInPoint: 4,
   },
