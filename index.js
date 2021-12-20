@@ -5,12 +5,15 @@ const Parser = require("./src/Parser");
 const PositionTracker = require("./src/PositionTracker");
 const _ = require("lodash");
 const TelegramBot = require("node-telegram-bot-api");
+const { last } = require("lodash");
 
 const token = "5022655680:AAGO-IR7udv60M8qvpC83AWx3fiIuwVyQYs";
 const chatIds = [-671062154];
 const INSTRUMENTS = ["NQ", "MNQ", "ES"];
-const filePath = "C:\\order_log.txt";
+const filePath =
+  "C:\\Users\\Goodrobot\\AppData\\Roaming\\VolFix.NET\\order_log.txt";
 const priceFile = "C:\\Users\\Goodrobot\\Documents\\";
+// const filePath = "C:\\order_log.txt";
 // const filePath = "./order_log copy.txt";
 // const priceFile = "./";
 

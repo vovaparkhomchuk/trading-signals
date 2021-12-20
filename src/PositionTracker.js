@@ -39,12 +39,9 @@ class PositionTracker {
       (position.side < 0 &&
         (price >= position.stopLoss || price <= position.takeProfit))
     ) {
-      position.side = 0;
-      position.takeProfit = 0;
-      position.stopLoss = 0;
-      position.price = 0;
-      position.size = 0;
+      this.#tradeOut({ ticker });
     }
+
     return this;
   }
 
@@ -91,10 +88,12 @@ class PositionTracker {
         stopLoss: stopLossPrice,
         price: positionPrice,
         size: size * side,
+        time: new Date().toLocaleString(),
       };
     } else {
       this.#positions[ticker].size += size * side;
-      if (this.#positions[ticker].size === 0) this.#positions[ticker].side = 0;
+      this.#positions[ticker].time = new Date().toLocaleString();
+      if (this.#positions[ticker].size === 0) this.#tradeOut(action);
       else
         this.#positions[ticker].side =
           this.#positions[ticker].size / Math.abs(this.#positions[ticker].size);
@@ -109,6 +108,7 @@ class PositionTracker {
       takeProfit: 0,
       stopLoss: 0,
       size: 0,
+      time: new Date().toLocaleString(),
       ticker,
     };
     return this;
