@@ -3,6 +3,7 @@ const instrumentInfo = require("./instrumentInfo");
 class PositionTracker {
   #positions = {};
   #prices = {};
+  #orders = {};
 
   checkActions(actions) {
     actions.map((action) => {
@@ -11,9 +12,6 @@ class PositionTracker {
         action;
       if (positionTickers.includes(ticker)) {
         switch (type) {
-          case "TRADE OUT":
-            this.#tradeOut(action);
-            return this;
           case "MARKET":
             this.#saveNewPosition(action, false);
             return this;
@@ -23,12 +21,30 @@ class PositionTracker {
           case "MOVE STOP":
             this.#positions[ticker].stopLoss = stopLoss;
             return this;
+          case "LIMIT":
+            this.#saveLimitOrder(action, false);
+            return this;
         }
       } else {
         switch (type) {
           case "MARKET":
             this.#saveNewPosition(action);
+            return this;
+          case "LIMIT":
+            this.#saveLimitOrder(action);
+            return this;
         }
+      }
+      switch (type) {
+        case "TRADE OUT":
+          this.#tradeOut(action);
+          return this;
+        case "CANCEL":
+          this.#cancelOrder(ticker);
+          return this;
+        case "MOVE":
+          this.#orders[ticker].price = price;
+          return this;
       }
     });
 
@@ -51,6 +67,24 @@ class PositionTracker {
     }
 
     return this;
+  }
+
+  checkLimitOrders(ticker, isNew = true) {
+    if (Object.keys(this.#orders).includes(ticker)) {
+      let order = this.#orders[ticker];
+      const limitPrice = order.price;
+      if (order.side > 0) {
+        if (this.#prices[ticker] <= limitPrice) {
+          this.#saveNewPosition(order, isNew);
+          this.#orders[ticker] = {};
+        }
+      } else if (order.side < 0) {
+        if (this.#prices[ticker] >= limitPrice) {
+          this.#saveNewPosition(order, isNew);
+          this.#orders[ticker] = {};
+        }
+      }
+    }
   }
 
   getPositions() {
@@ -123,6 +157,19 @@ class PositionTracker {
       time: new Date().toLocaleString(),
       ticker,
     };
+    this.#cancelOrder(ticker);
+    return this;
+  }
+
+  #cancelOrder(ticker) {
+    console.log({ orders: this.#orders });
+    this.#orders[ticker] = {};
+    console.log({ orders: this.#orders });
+    return this;
+  }
+
+  #saveLimitOrder(action) {
+    this.#orders[action.ticker] = action;
     return this;
   }
 }

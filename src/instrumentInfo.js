@@ -8,10 +8,19 @@ const instrumentInfo = {
   ES: {
     ticksInPoint: 4,
   },
+  MES: {
+    ticksInPoint: 4,
+  },
   GC: {
     ticksInPoint: 10,
   },
+  MGC: {
+    ticksInPoint: 10,
+  },
   CL: {
+    ticksInPoint: 100,
+  },
+  MCL: {
     ticksInPoint: 100,
   },
 };

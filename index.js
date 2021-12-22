@@ -1,35 +1,34 @@
 const fs = require("fs");
 const util = require("util");
 const asyncReadFile = util.promisify(fs.readFile);
+const { isEqual } = require("lodash");
+const { sendTelegramMessage } = require("./src/TelegramBot");
 const Parser = require("./src/Parser");
 const PositionTracker = require("./src/PositionTracker");
-const _ = require("lodash");
-const TelegramBot = require("node-telegram-bot-api");
-const { last } = require("lodash");
 
-const token = "5022655680:AAGO-IR7udv60M8qvpC83AWx3fiIuwVyQYs";
-const chatIds = [-671062154];
 const INSTRUMENTS = ["NQ", "MNQ", "ES"];
-const filePath =
-  "C:\\Users\\Goodrobot\\AppData\\Roaming\\VolFix.NET\\order_log.txt";
+// const filePath =
+//   "C:\\Users\\Goodrobot\\AppData\\Roaming\\VolFix.NET\\order_log.txt";
 const priceFile = "C:\\Users\\Goodrobot\\Documents\\";
-// const filePath = "C:\\order_log.txt";
+const filePath = "C:\\order_log.txt";
 // const filePath = "./order_log copy.txt";
 // const priceFile = "./";
 
-const bot = new TelegramBot(token, { polling: false });
 const parser = new Parser();
 const positionTracker = new PositionTracker();
 let lastPositions = {};
 
-const sendTelegramMessage = (msg) => {
-  for (let id of chatIds) bot.sendMessage(id, msg);
+const getChangeSeconds = (filename) => {
+  const stats = fs.statSync(filename);
+  const seconds = +stats.mtime;
+  return seconds;
 };
 
-const main = async () => {
+function App() {
   sendTelegramMessage("Hello, I'm alive again");
   const actionDone = {};
 
+  // Subscribe on file change
   fs.watch(filePath, async (eventName, filename) => {
     const seconds = getChangeSeconds(filePath);
     if (actionDone[filename] == seconds) return;
@@ -44,11 +43,10 @@ const main = async () => {
         parser.currentPositions = currentPositions;
         parser.lastPrices = lastPrices;
         const actions = parser.saveNewData(file, positionTracker).getActions();
-        console.log({ actions });
         const positions = positionTracker.checkActions(actions).getPositions();
         console.log({ positions });
       } catch (e) {
-        console.log({ e });
+        console.error({ e });
       }
     } else {
       console.log("filename not provided or check file access permissions");
@@ -69,38 +67,36 @@ const main = async () => {
           if (!isNaN(price)) {
             positionTracker.setPrices(ticker, price);
             positionTracker.checkStopAndTake(ticker);
+            positionTracker.checkLimitOrders(ticker);
             const positions = positionTracker.getPositions();
             if (Object.keys(positions).length > 0) {
-              if (!_.isEqual(positions, lastPositions)) {
+              if (!isEqual(positions, lastPositions)) {
                 console.log({ positions });
-                sendTelegramMessage(JSON.stringify(positions));
+                // sendTelegramMessage(JSON.stringify(positions));
+
+                for (let id in positions) {
+                  const sideEmoji =
+                    positions[id].side > 0
+                      ? "📈"
+                      : positions[id].side < 0
+                      ? "📉"
+                      : "";
+                  const message = `
+                  ${id} ${sideEmoji}\nPrice: ${positions[id].price}\nSize: ${positions[id].size}\nTakeProfit: ${positions[id].takeProfit}\nStopLoss: ${positions[id].stopLoss}`;
+                  sendTelegramMessage(message);
+                }
                 lastPositions = { ...positions };
               }
             }
           }
         } catch (e) {
-          console.log({ e });
+          console.error({ e });
         }
       } else {
         console.log("filename not provided or check file access permissions");
       }
     });
   });
-};
+}
 
-main();
-
-const getChangeSeconds = (filename) => {
-  const path = filename;
-  const stats = fs.statSync(path);
-  const seconds = +stats.mtime;
-  return seconds;
-};
-
-// POSITION TRACKER
-// Subscribe on price file change
-// If we have position(s) - campare last price and stop loss/take profit
-// LATER: save limit orders in position tracker and track it filled
-
-// PARSER
-// Save actions with last price and send it to position tracker
+App();

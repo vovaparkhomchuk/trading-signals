@@ -103,6 +103,7 @@ class Parser {
               : 0;
 
           if (position === 0) {
+            parsed.price = price;
           }
           // changing OCO
           else {
